@@ -4,9 +4,13 @@ import { Sidebar } from '../components/Sidebar';
 import AIAssistant from '../components/ui/AIAssistant';
 
 function ProtectedLayout() {
-  const { isAuthenticated, currentUser } = useWorkflow();
+  const { isAuthenticated, authLoaded, currentUser } = useWorkflow();
   const location = useLocation();
   
+  if (!authLoaded) {
+    return null;
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }

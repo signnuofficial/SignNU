@@ -12,20 +12,23 @@ const {
     addUserNotification,
     updateUserNotification,
     updateUser,
+    updateUserRole,
     deleteUser,
 } = require('../controllers/userController.js');
 const authMiddleware = require('../middleware/authMiddleware.js');
+const adminMiddleware = require('../middleware/adminMiddleware.js');
 
-router.get('/', getAllUsers);
+router.get('/', authMiddleware, adminMiddleware, getAllUsers);
 router.post('/login', loginUser);
 router.get('/me', authMiddleware, getCurrentUser);
 router.post('/logout', authMiddleware, logoutUser);
-router.get('/:id/notifications', getUserNotifications);
-router.post('/:id/notifications', addUserNotification);
-router.patch('/:id/notifications/:notificationId', updateUserNotification);
-router.get('/:id', getUserById);
+router.get('/:id/notifications', authMiddleware, getUserNotifications);
+router.post('/:id/notifications', authMiddleware, addUserNotification);
+router.patch('/:id/notifications/:notificationId', authMiddleware, updateUserNotification);
+router.get('/:id', authMiddleware, getUserById);
 router.post('/', createUser);
-router.patch('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.patch('/:id', authMiddleware, updateUser);
+router.patch('/:id/role', authMiddleware, adminMiddleware, updateUserRole);
+router.delete('/:id', authMiddleware, deleteUser);
 
 module.exports = router;

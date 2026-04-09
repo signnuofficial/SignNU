@@ -11,7 +11,20 @@ interface ImportMeta {
 
 export type FormType = 'ACP' | 'Meal Request' | 'RI' | 'RFP' | 'Item Request';
 export type FormStatus = 'draft' | 'pending' | 'approved' | 'rejected' | 'completed';
-export type UserRole = 'Requester' | 'Signatory' | 'Reviewer' | 'Admin';
+export type UserRole =
+  | 'Requester'
+  | 'Signatory'
+  | 'Reviewer'
+  | 'Admin'
+  | 'Department Head'
+  | 'Dean'
+  | 'Faculty'
+  | 'Staff'
+  | 'Student'
+  | 'Finance Officer'
+  | 'Procurement Officer'
+  | 'VP for Academics'
+  | 'VP for Finance';
 
 export interface Attachment {
   id: string;
@@ -98,6 +111,7 @@ export interface FormSubmission {
 
 interface WorkflowContextType {
   isAuthenticated: boolean;
+  authLoaded: boolean;
   currentUser: CurrentUser | null;
   forms: FormSubmission[];
   notifications: Notification[];
@@ -127,6 +141,7 @@ const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoaded, setAuthLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
   const viteEnv = import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } };
@@ -172,6 +187,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         console.error('Verify session failed:', error);
         setCurrentUser(null);
         setIsAuthenticated(false);
+      } finally {
+        setAuthLoaded(true);
       }
     };
 
@@ -306,14 +323,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      const role = ['Requester', 'Signatory', 'Reviewer', 'Admin'].includes(data.user.role)
-        ? (data.user.role as UserRole)
-        : 'Requester';
-
       const safeUser = {
         id: data.user._id ?? data.user.id,
         name: data.user.username ?? data.user.name ?? data.user.email,
-        role,
+        role: (data.user.role as UserRole) || 'Requester',
       };
 
       setCurrentUser(safeUser);
@@ -726,6 +739,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     <WorkflowContext.Provider
       value={{
         isAuthenticated,
+        authLoaded,
         currentUser,
         forms,
         notifications,

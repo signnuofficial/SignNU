@@ -22,6 +22,7 @@ export function Sidebar() {
     { path: '/new-form', icon: FileText, label: 'New Form' },
     { path: '/submissions', icon: FileCheck, label: 'My Submissions' },
     { path: '/approvals', icon: CheckSquare, label: 'Approval Queue' },
+    ...(currentUser.role === 'Admin' ? [{ path: '/admin', icon: School, label: 'Admin' }] : []),
   ];
 
   return (

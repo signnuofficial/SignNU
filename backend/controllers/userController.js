@@ -17,7 +17,7 @@ const generateToken = (user) => {
 // Get all users
 const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}).sort({ created_at: -1 });
+        const users = await User.find({}).sort({ created_at: -1 }).select('-password');
         res.status(200).json(users);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -28,7 +28,7 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
     const { id } = req.params;
     try {
-        const user = await User.findById(id);
+        const user = await User.findById(id).select('-password');
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -200,11 +200,49 @@ const updateUserNotification = async (req, res) => {
 const updateUser = async (req, res) => {
     const { id } = req.params;
     try {
+        if (req.user.id !== id && req.user.role !== 'Admin') {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const payload = { ...req.body };
         if (payload.password) {
             payload.password = await bcrypt.hash(payload.password, 10);
         }
-        const user = await User.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
+        const user = await User.findByIdAndUpdate(id, payload, { new: true, runValidators: true }).select('-password');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+const updateUserRole = async (req, res) => {
+    const { id } = req.params;
+    const { role } = req.body;
+    const validRoles = [
+        'Department Head',
+        'Dean',
+        'Faculty',
+        'Staff',
+        'Student',
+        'Finance Officer',
+        'Procurement Officer',
+        'VP for Academics',
+        'VP for Finance',
+        'Requester',
+        'Signatory',
+        'Reviewer',
+        'Admin',
+    ];
+
+    if (!role || !validRoles.includes(role)) {
+        return res.status(400).json({ error: 'Invalid role' });
+    }
+
+    try {
+        const user = await User.findByIdAndUpdate(id, { role }, { new: true, runValidators: true }).select('-password');
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -239,5 +277,6 @@ module.exports = {
     addUserNotification,
     updateUserNotification,
     updateUser,
+    updateUserRole,
     deleteUser,
 };
