@@ -73,6 +73,12 @@ const createUser = async (req, res) => {
         delete safeUser.password;
 
         const token = generateToken(user);
+        req.session.user = {
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+        };
+
         res.cookie('auth_token', token, {
             httpOnly: true,
             sameSite: 'lax',
@@ -104,6 +110,12 @@ const loginUser = async (req, res) => {
         delete safeUser.password;
 
         const token = generateToken(user);
+        req.session.user = {
+            id: user._id.toString(),
+            email: user.email,
+            role: user.role,
+        };
+
         res.cookie('auth_token', token, {
             httpOnly: true,
             sameSite: 'lax',
@@ -133,12 +145,41 @@ const getCurrentUser = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
-    res.clearCookie('auth_token', {
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        secure: process.env.NODE_ENV === 'production',
-    });
-    res.status(200).json({ message: 'Logout successful' });
+    if (req.session) {
+        req.session.destroy((err) => {
+            if (err) {
+                console.error('Session destroy error:', err);
+            }
+
+            res.clearCookie(process.env.SESSION_COOKIE_NAME || 'signnu_session', {
+                httpOnly: true,
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            });
+
+            res.clearCookie('auth_token', {
+                httpOnly: true,
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+                secure: process.env.NODE_ENV === 'production',
+            });
+
+            return res.status(200).json({ message: 'Logout successful' });
+        });
+    } else {
+        res.clearCookie(process.env.SESSION_COOKIE_NAME || 'signnu_session', {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            secure: process.env.NODE_ENV === 'production',
+        });
+
+        res.clearCookie('auth_token', {
+            httpOnly: true,
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+            secure: process.env.NODE_ENV === 'production',
+        });
+
+        res.status(200).json({ message: 'Logout successful' });
+    }
 };
 
 const changePassword = async (req, res) => {

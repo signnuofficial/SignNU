@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors'); // 1. REQUIRE CORS AT THE TOP
+const session = require('express-session');
 const approvalRoutes = require('./routes/route');
 const userRoutes = require('./routes/userRoutes');
 const formRoutes = require('./routes/formRoutes');
@@ -16,6 +17,22 @@ app.use(cors({
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
 })); 
+
+// 3. Session middleware
+app.use(
+  session({
+    name: process.env.SESSION_COOKIE_NAME || 'signnu_session',
+    secret: process.env.SESSION_SECRET || 'secret123',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 1000, // 1 hour
+    },
+  })
+);
 
 // 1. JSON Parser Middleware
 app.use(express.json());
