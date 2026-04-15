@@ -1,4 +1,4 @@
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { Outlet, Navigate, useLocation } from 'react-router';
 import { useWorkflow } from '../context/WorkflowContext';
 import { Sidebar } from '../components/Sidebar';
 import AIAssistant from '../components/ui/AIAssistant';
