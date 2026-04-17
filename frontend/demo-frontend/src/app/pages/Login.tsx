@@ -192,9 +192,6 @@ export function Login() {
                     <Label>Email Address</Label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <Label>Email Address</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                       <Input
                         type="email"
                         value={email}
@@ -206,11 +203,7 @@ export function Login() {
                   </div>
 
                   {/* PASSWORD */}
-                  {/* PASSWORD */}
                   <div className="space-y-2">
-                    <Label>Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <Label>Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
