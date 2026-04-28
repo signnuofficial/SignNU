@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors'); // 1. REQUIRE CORS AT THE TOP
+const cors = require('cors');
 const session = require('express-session');
 const approvalRoutes = require('./routes/route');
 const userRoutes = require('./routes/userRoutes');
@@ -43,6 +43,7 @@ app.use(
 
 // 1. JSON Parser Middleware
 app.use(express.json());
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // 2. Logging Middleware
 app.use((req, res, next) => {
@@ -60,16 +61,22 @@ app.get('/', (req, res) => {
     res.status(200).json({ message: 'Welcome to the SignNU API' });
 });
 
-// 5. 404 Handler (JSON format)
+// 5. Health check
+app.get('/health', (req, res) => {
+    res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+// 6. 404 Handler (JSON format)
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
-// 6. Connect to MongoDB & Start Server
+// 7. Connect to MongoDB & Start Server
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         app.listen(PORT, '0.0.0.0', () => {
-            console.log(`Connected to DB & Server running on port ${PORT}`);
+            console.log(`🚀 Connected to DB & Server running on port ${PORT}`);
+            console.log(`💬 For chatbot: Run 'node summary.js' on port 5000`);
         });
     })
     .catch((error) => {
