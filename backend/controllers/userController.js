@@ -111,19 +111,29 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email: email.toLowerCase().trim() });
+
         if (!user) {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
+
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        // 🔒 NEW: APPROVAL CHECK (ADD THIS)
+        if (!user.isApproved) {
+            return res.status(403).json({
+                error: 'Your account is pending admin approval.'
+            });
         }
 
         const safeUser = user.toObject();
         delete safeUser.password;
 
         const token = generateToken(user);
+
         req.session.user = {
             id: user._id.toString(),
             email: user.email,
@@ -139,7 +149,12 @@ const loginUser = async (req, res) => {
             maxAge: 60 * 60 * 1000, // 1 hour
         });
 
-        res.status(200).json({ message: 'Login successful', token, user: safeUser });
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            user: safeUser
+        });
+
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
