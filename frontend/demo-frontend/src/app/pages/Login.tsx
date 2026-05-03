@@ -27,7 +27,7 @@ export function Login() {
 
     setIsLoading(true);
 
-    const success = await login(email, password);
+    const success = await login(email.trim().toLowerCase(), password);
     if (success) {
       toast.success('Login successful!');
       navigate('/');
