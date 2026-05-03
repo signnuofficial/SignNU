@@ -150,7 +150,7 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
       id: `anno-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: mode,
       page: pageNumber,
-      text: mode === 'text' ? 'Enter text' : 'Draw or upload signature in form',
+      text: '',
       xPct: Math.min(Math.max(xPct, 0), 1),
       yPct: Math.min(Math.max(yPct, 0), 1),
       widthPct: mode === 'text' ? 0.2 : 0.25,
@@ -202,7 +202,7 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
 
   const updateAnnotationApprover = (annotationId: string, approverStepId: string) => {
     const step = approvalSteps.find((item) => item.id === approverStepId);
-    const newText = step ? getApproverStepLabel(step) : 'Draw or upload signature in form';
+    const newText = step ? getApproverStepLabel(step) : '';
     updateAnnotation(annotationId, { approverStepId: approverStepId || undefined, text: newText });
     setJustFinishedSignature(true);
   };
@@ -528,9 +528,16 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
                         style={{ 
                           fontSize: `${annotation.fontSizePx || 14}px` 
                         }}
-                        onFocus={() => { 
-                          setIsEditingText(true); 
-                          setJustFinishedEditing(false); 
+                        onFocus={(e) => { 
+                          const el = e.currentTarget as HTMLElement;
+                          // ensure the editable element is seeded with the current annotation text
+                          // without making the element controlled by React while editing
+                          // (prevents caret/ordering issues)
+                          try {
+                            if (el && el.innerText !== annotation.text) el.innerText = annotation.text || '';
+                          } catch {}
+                          setIsEditingText(true);
+                          setJustFinishedEditing(false);
                         }}
                         onInput={(e) => {
                           const newText = e.currentTarget.innerText;
@@ -560,12 +567,10 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
 
                         className="w-full h-full outline-none break-words whitespace-pre-wrap"
                       >
-                      {annotation.text}
+                        {(selectedId === annotation.id && isEditingText) ? null : annotation.text}
                     </div>
                       ) : (
-                        <div className="truncate">
-                          {annotation.text || (annotation.type === 'signature' ? 'Draw or upload signature' : 'Text')}
-                        </div>
+                        <div className="truncate">{annotation.text || ''}</div>
                       )}
                   </div>
                 );
@@ -613,7 +618,7 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
 
                   {selectedAnnotation.approverStepId && (
                     <p className="text-sm text-slate-600">
-                      Placeholder will show: <span className="font-medium">{getApproverStepLabel(approvalSteps.find((step) => step.id === selectedAnnotation.approverStepId))}</span>
+                      Assigned approver: <span className="font-medium">{getApproverStepLabel(approvalSteps.find((step) => step.id === selectedAnnotation.approverStepId))}</span>
                     </p>
                   )}
                 </div>

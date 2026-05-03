@@ -315,17 +315,20 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(newForm),
       });
 
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error('Failed to save form');
+        const message = data?.error || `Failed to save form (${res.status})`;
+        throw new Error(message);
       }
 
-      const createdForm = await res.json();
+      const createdForm = data;
       setForms((prev) => [createdForm, ...prev]);
       return createdForm;
     } catch (error) {
       console.error('Unable to save form:', error);
+      // still keep a local draft for UX, but signal failure to the caller
       setForms((prev) => [newForm, ...prev]);
-      return newForm;
+      return undefined;
     }
   };
 
