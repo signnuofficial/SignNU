@@ -4,7 +4,7 @@ import {
   FileText,
   CheckSquare,
   FileCheck,
-  School,
+  Pencil,
   LogOut,
   Settings,
   MessageSquare,
@@ -35,7 +35,7 @@ export function Sidebar() {
     { path: '/account-settings', icon: Settings, label: 'Account Settings' },
     ...(currentUser.role === 'Admin'
       ? [
-          { path: '/admin', icon: School, label: 'Accounts' },
+          { path: '/admin', icon: Pencil, label: 'Accounts' },
           { path: '/admin/dashboard', icon: CheckSquare, label: 'Admin Requests' },
         ]
       : []),
@@ -49,7 +49,7 @@ export function Sidebar() {
         <div className="flex items-center gap-3">
 
           <div className="w-10 h-10 bg-[#ffd41c] rounded-lg flex items-center justify-center shadow-md">
-            <School className="w-6 h-6 text-[#35408e]" />
+            <Pencil className="w-6 h-6 text-[#35408e]" />
           </div>
 
           <div>
