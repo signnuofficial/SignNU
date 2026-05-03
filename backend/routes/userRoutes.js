@@ -25,6 +25,7 @@ const {
     updateSignature,
     updatePdf,
     deleteUser,
+    getApproverUsers,
 } = require('../controllers/userController.js');
 
 const authMiddleware = require('../middleware/authMiddleware.js');
@@ -62,6 +63,7 @@ router.post('/test-email', testSendEmail);
 router.post('/reset-password', resetPassword);
 router.post('/change-password', authMiddleware, changePassword);
 router.get('/me', authMiddleware, getCurrentUser);
+router.get('/approvers', authMiddleware, getApproverUsers);
 router.post('/logout', authMiddleware, logoutUser);
 
 // ======================

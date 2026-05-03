@@ -45,6 +45,18 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+const getApproverUsers = async (_req, res) => {
+    try {
+        const users = await User.find({ isApproved: true })
+            .sort({ username: 1 })
+            .select('_id username email role department isApproved');
+
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Get a single user by ID
 const getUserById = async (req, res) => {
     const { id } = req.params;
@@ -699,4 +711,5 @@ module.exports = {
     updateSignature,
     updatePdf,
     deleteUser,
+    getApproverUsers,
 };

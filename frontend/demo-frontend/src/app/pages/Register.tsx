@@ -241,10 +241,10 @@ export function Register() {
                             <SelectValue placeholder="Select department" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="SCS">SCS</SelectItem>
-                            <SelectItem value="SABM">SABM</SelectItem>
-                            <SelectItem value="SAS">SAS</SelectItem>
-                            <SelectItem value="SEA">SEA</SelectItem>
+                            <SelectItem value="SCS">School of Computer Studies</SelectItem>
+                            <SelectItem value="SABM">School of Accountancy and Business Management</SelectItem>
+                            <SelectItem value="SAS">School of Arts and Sciences</SelectItem>
+                            <SelectItem value="SEA">School of Engineering and Architecture</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
