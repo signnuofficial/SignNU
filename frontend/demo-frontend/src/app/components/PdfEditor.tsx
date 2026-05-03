@@ -18,6 +18,14 @@ export interface PdfAnnotation {
   heightPct: number;
   signatureData?: string;
   ownerId?: string;
+  approverStepId?: string;
+}
+
+export interface PdfEditorApprovalStep {
+  id?: string;
+  role: string;
+  userId: string;
+  userName: string;
 }
 
 interface PdfEditorProps {
@@ -28,9 +36,10 @@ interface PdfEditorProps {
   isSaving: boolean;
   currentUserId?: string;
   currentUserSignatureURL?: string | null;
+  approvalSteps: PdfEditorApprovalStep[];
 }
 
-export function PdfEditor({ file, annotations, onChange, onClose, isSaving, currentUserId, currentUserSignatureURL }: PdfEditorProps) {
+export function PdfEditor({ file, annotations, onChange, onClose, isSaving, currentUserId, currentUserSignatureURL, approvalSteps }: PdfEditorProps) {
   const pageRefs = useRef<Array<HTMLCanvasElement | null>>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<any>(null);
@@ -161,6 +170,17 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
   } | null>(null);
 
   const selectedAnnotation = annotations.find((annotation) => annotation.id === selectedId) || null;
+
+  const getApproverStepLabel = (step: PdfEditorApprovalStep | undefined) => {
+    if (!step) return '';
+    return step.userName ? `${step.role} — ${step.userName}` : step.role;
+  };
+
+  const updateAnnotationApprover = (annotationId: string, approverStepId: string) => {
+    const step = approvalSteps.find((item) => item.id === approverStepId);
+    const newText = step ? getApproverStepLabel(step) : 'SIGN HERE';
+    updateAnnotation(annotationId, { approverStepId: approverStepId || undefined, text: newText });
+  };
 
   const setupSignatureCanvas = () => {
     const canvas = signatureCanvasRef.current;
@@ -426,6 +446,28 @@ export function PdfEditor({ file, annotations, onChange, onClose, isSaving, curr
               />
               {selectedAnnotation?.type === 'signature' ? (
                 <>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Assign approver</label>
+                      <select
+                        className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2"
+                        value={selectedAnnotation.approverStepId ?? ''}
+                        onChange={(e) => updateAnnotationApprover(selectedAnnotation.id, e.target.value)}
+                      >
+                        <option value="">Unassigned</option>
+                        {approvalSteps.map((step) => (
+                          <option key={step.id} value={step.id}>
+                            {getApproverStepLabel(step)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {selectedAnnotation.approverStepId && (
+                      <p className="text-sm text-slate-600">
+                        Placeholder will show: <span className="font-medium">{getApproverStepLabel(approvalSteps.find((step) => step.id === selectedAnnotation.approverStepId))}</span>
+                      </p>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-2 mb-4">
                     <Button type="button" variant="outline" onClick={() => updateAnnotation(selectedAnnotation.id, { signatureData: undefined })}>
                       Draw Signature

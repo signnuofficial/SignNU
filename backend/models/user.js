@@ -11,6 +11,9 @@ const NotificationSchema = new Schema({
 }, { _id: false });
 
 const userSchema = new Schema({
+  firstName: { type: String, required: true },
+  middleInitial: { type: String, trim: true },
+  lastName: { type: String, required: true },
   username: { type: String, required: true, unique: true },
   email: {
     type: String,
@@ -28,11 +31,22 @@ const userSchema = new Schema({
   password: { type: String, required: true },
   passwordResetToken: { type: String },
   passwordResetTokenExpires: { type: Date },
+
   role: { type: String, default: 'user' },
+
+  //  NEW FIELD (ACCOUNT APPROVAL) 
+  isApproved: {
+    type: Boolean,
+    default: function () {
+      return this.role === "Admin"; // Auto-approve admins
+    }
+  },
+
   department: { type: String },
   notifications: [NotificationSchema],
   signatureURL: { type: String },
   pdfURL: { type: String }
+
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 module.exports = mongoose.model('User', userSchema);

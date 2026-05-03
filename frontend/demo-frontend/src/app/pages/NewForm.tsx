@@ -317,9 +317,10 @@ export function NewForm() {
   };
 
   const buildApprovalSteps = (type: FormType) => {
-    return approvalChains[type].map((step) => {
+    return approvalChains[type].map((step, index) => {
       const matchedUser = findMatchingUserForRole(step.role);
       return {
+        id: `step-${Date.now()}-${index}`,
         role: step.role,
         userId: matchedUser?.id || '',
         userName: matchedUser?.name || '',
@@ -357,7 +358,7 @@ export function NewForm() {
   const addApprovalStep = () => {
     setApprovalSteps((prev) => [
       ...prev,
-      { role: '', userId: '', userName: '' },
+      { id: `step-${Date.now()}-${prev.length}`, role: '', userId: '', userName: '' },
     ]);
   };
 
@@ -496,97 +497,6 @@ export function NewForm() {
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="sourcePdf">Upload Document</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                  <p className="text-sm text-gray-600 mb-2">Upload the PDF you want to send for approval</p>
-                  <Input
-                    id="sourcePdf"
-                    type="file"
-                    accept="application/pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] ?? null;
-                      if (file && file.type !== 'application/pdf') {
-                        toast.error('Please select a PDF file');
-                        return;
-                      }
-                      setPdfSourceFile(file);
-                    }}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('sourcePdf')?.click()}
-                  >
-                    Select PDF
-                  </Button>
-                  {pdfSourceFile && (
-                    <>
-                      <p className="text-xs text-gray-500 mt-2">{pdfSourceFile.name}</p>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        className="mt-2 border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100"
-                        onClick={() => setShowPdfEditor(true)}
-                      >
-                        Modify PDF
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <Dialog open={showPdfEditor} onOpenChange={setShowPdfEditor}>
-                <DialogContent className="w-full max-w-[90vw] sm:max-w-5xl max-h-[calc(100vh-6rem)] overflow-auto">
-                  <DialogHeader>
-                    <DialogTitle>Modify PDF</DialogTitle>
-                  </DialogHeader>
-                  {pdfSourceFile && (
-                    <PdfEditor
-                      file={pdfSourceFile}
-                      annotations={pdfAnnotations}
-                      onChange={setPdfAnnotations}
-                      onClose={() => setShowPdfEditor(false)}
-                      isSaving={isGeneratingPdf}
-                      currentUserId={currentUser.id}
-                      currentUserSignatureURL={currentUser.signatureURL ?? null}
-                    />
-                  )}
-                </DialogContent>
-              </Dialog>
-
-              {generatedPdfUrl && (
-                <div className="space-y-2 rounded-lg border border-green-200 bg-green-50 p-4">
-                  <p className="text-sm text-green-900">Generated PDF ready.</p>
-                  {/* <a
-                    href={generatedPdfUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-blue-700 underline"
-                  >
-                    View saved PDF
-                  </a> */}
-                </div>
-              )}
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
-                <Button
-                  type="button"
-                  variant="default"
-                  className="mt-4 w-full sm:w-auto px-6"
-                  onClick={handleSavePdf}
-                  disabled={isGeneratingPdf}
-                >
-                  {isGeneratingPdf ? 'Saving PDF...' : 'Save PDF'}
-                </Button>
-                <p className="text-xs text-gray-500 mt-3 sm:mt-0">
-                  Save the edited PDF before submitting your request.
-                </p>
-              </div>
-
               {/* Approval Chain Preview */}
               {formType && (
                 <div className="space-y-2">
@@ -655,6 +565,111 @@ export function NewForm() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2">
+                <Label htmlFor="sourcePdf">Upload Document</Label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm text-gray-600 mb-2">Upload the PDF you want to send for approval</p>
+                  <Input
+                    id="sourcePdf"
+                    type="file"
+                    accept="application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      if (file && file.type !== 'application/pdf') {
+                        toast.error('Please select a PDF file');
+                        return;
+                      }
+                      setPdfSourceFile(file);
+                    }}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('sourcePdf')?.click()}
+                  >
+                    Select PDF
+                  </Button>
+                  {pdfSourceFile && (
+                    <>
+                      <p className="text-xs text-gray-500 mt-2">{pdfSourceFile.name}</p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="mt-2 border-blue-300 bg-blue-50 text-blue-900 hover:bg-blue-100"
+                        onClick={() => setShowPdfEditor(true)}
+                      >
+                        Modify PDF
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <Dialog open={showPdfEditor} onOpenChange={setShowPdfEditor}>
+                <DialogContent className="w-full max-w-[90vw] sm:max-w-5xl max-h-[calc(100vh-6rem)] overflow-auto">
+                  <DialogHeader>
+                    <DialogTitle>Modify PDF</DialogTitle>
+                  </DialogHeader>
+                  {approvalSteps.length > 0 && (
+                    <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <p className="font-medium text-slate-900">Approval chain for this submission</p>
+                      <ul className="mt-2 space-y-2">
+                        {approvalSteps.map((step, index) => (
+                          <li key={index} className="flex flex-col gap-1">
+                            <span className="font-semibold">Step {index + 1}: {step.role || 'Untitled role'}</span>
+                            <span className="text-slate-600">{step.userName ? step.userName : 'No approver selected yet'}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {pdfSourceFile && (
+                    <PdfEditor
+                      file={pdfSourceFile}
+                      annotations={pdfAnnotations}
+                      onChange={setPdfAnnotations}
+                      onClose={() => setShowPdfEditor(false)}
+                      isSaving={isGeneratingPdf}
+                      currentUserId={currentUser.id}
+                      currentUserSignatureURL={currentUser.signatureURL ?? null}
+                      approvalSteps={approvalSteps}
+                    />
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              {generatedPdfUrl && (
+                <div className="space-y-2 rounded-lg border border-green-200 bg-green-50 p-4">
+                  <p className="text-sm text-green-900">Generated PDF ready.</p>
+                  {/* <a
+                    href={generatedPdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-blue-700 underline"
+                  >
+                    View saved PDF
+                  </a> */}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4">
+                <Button
+                  type="button"
+                  variant="default"
+                  className="mt-4 w-full sm:w-auto px-6"
+                  onClick={handleSavePdf}
+                  disabled={isGeneratingPdf}
+                >
+                  {isGeneratingPdf ? 'Saving PDF...' : 'Save PDF'}
+                </Button>
+                <p className="text-xs text-gray-500 mt-3 sm:mt-0">
+                  Save the edited PDF before submitting your request.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
