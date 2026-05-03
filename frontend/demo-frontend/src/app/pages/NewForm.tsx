@@ -53,6 +53,21 @@ export function NewForm() {
   const formIdRef = useRef(`form-${Date.now()}`);
   const [formType, setFormType] = useState<FormType | ''>('');
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [attachments, setAttachments] = useState<Array<{ id?: string; name: string; size: number; type: string; url?: string }>>([]);
+  const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; role: string; department?: string }>>([]);
+  const [approvalRoleOptions, setApprovalRoleOptions] = useState<string[]>([]);
+  const [approvalDepartmentOptions, setApprovalDepartmentOptions] = useState<string[]>([]);
+  const [approvalSteps, setApprovalSteps] = useState<Array<{ id?: string; role: string; department: string; userId: string; userName: string }>>([]);
+  const [userLoadError, setUserLoadError] = useState<string | null>(null);
+  const [pdfSourceFile, setPdfSourceFile] = useState<File | null>(null);
+  const [pdfAnnotations, setPdfAnnotations] = useState<PdfAnnotation[]>([]);
+  const [showPdfEditor, setShowPdfEditor] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [generatedPdfUrl, setGeneratedPdfUrl] = useState('');
+  const [draftCreated, setDraftCreated] = useState(false);
+
   const isValidUrl = (value: string | undefined | null) => {
     if (!value) return false;
     try {
@@ -62,23 +77,11 @@ export function NewForm() {
       return false;
     }
   };
-  const [description, setDescription] = useState('');
-  const [formData, setFormData] = useState<Record<string, any>>({});
-  const [attachments, setAttachments] = useState<Array<{ id?: string; name: string; size: number; type: string; url?: string }>>([]);
-  const [availableUsers, setAvailableUsers] = useState<Array<{ id: string; name: string; role: string }>>([]);
-  const [approvalSteps, setApprovalSteps] = useState<Array<{ id?: string; role: string; userId: string; userName: string }>>([]);
-  const [userLoadError, setUserLoadError] = useState<string | null>(null);
-  const [pdfSourceFile, setPdfSourceFile] = useState<File | null>(null);
-  const [pdfAnnotations, setPdfAnnotations] = useState<PdfAnnotation[]>([]);
-  const [showPdfEditor, setShowPdfEditor] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [generatedPdfUrl, setGeneratedPdfUrl] = useState('');
-  const [draftCreated, setDraftCreated] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/users`, {
+        const response = await fetch(`${API_BASE_URL}/api/users/approvers`, {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
@@ -86,14 +89,39 @@ export function NewForm() {
         });
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Failed to load users: ${response.status} ${errorText}`);
+          throw new Error(`Failed to load approvers: ${response.status} ${errorText}`);
         }
         const fetchedUsers = await response.json();
-        setAvailableUsers(fetchedUsers.map((user: any) => ({
-          id: user._id || user.id,
-          name: user.username || user.name || user.email,
-          role: user.role,
-        })));
+        const processedUsers = fetchedUsers
+          .map((user: any) => ({
+            id: user._id || user.id,
+            name: user.username || user.name || user.email,
+            role: user.role,
+            department: user.department,
+          }))
+          .filter((user: { role: string }) => user.role !== 'Student');
+        
+        setAvailableUsers(processedUsers);
+
+        // Extract unique roles and departments from available users
+        const uniqueRoles = Array.from(
+          new Set(
+            processedUsers
+              .map((u: any) => u.role)
+              .filter((r: string) => r && r.trim())
+          )
+        ).sort() as string[];
+
+        const uniqueDepartments = Array.from(
+          new Set(
+            processedUsers
+              .map((u: any) => u.department)
+              .filter((d: string) => d && d.trim())
+          )
+        ).sort() as string[];
+
+        setApprovalRoleOptions(uniqueRoles);
+        setApprovalDepartmentOptions(uniqueDepartments);
         setUserLoadError(null);
       } catch (error: any) {
         console.error('Error loading approvers:', error);
@@ -220,8 +248,8 @@ export function NewForm() {
       return;
     }
 
-    if (approvalSteps.length === 0 || approvalSteps.some((step) => !step.role.trim() || !step.userId)) {
-      toast.error('Please enter a role and select an approver for every approval step');
+    if (approvalSteps.length === 0 || approvalSteps.some((step) => !step.role.trim() || !step.department.trim() || !step.userId)) {
+      toast.error('Please enter a role, department, and select an approver for every approval step');
       return;
     }
 
@@ -301,27 +329,53 @@ export function NewForm() {
   };
 
   const normalizeRole = (role: string) => role.trim().toLowerCase();
+  const normalizeDepartment = (department: string) => department.trim().toLowerCase();
 
-  const getApproverOptions = (role: string) => {
-    const target = normalizeRole(role);
-    const exactMatches = availableUsers.filter((user) => normalizeRole(user.role) === target);
-    return exactMatches.length > 0 ? exactMatches : availableUsers;
+  const findMatchingUserForStep = (role: string, department: string) => {
+    const targetRole = normalizeRole(role);
+    const targetDepartment = normalizeDepartment(department);
+
+    // Strict matching: must match both role AND department, no fallback
+    if (!targetRole.trim() || !targetDepartment.trim()) {
+      return null;
+    }
+
+    return availableUsers.find((user) =>
+      normalizeRole(user.role) === targetRole &&
+      normalizeDepartment(user.department || '') === targetDepartment
+    ) ?? null;
   };
 
-  const hasExactApproverForRole = (role: string) =>
-    availableUsers.some((user) => normalizeRole(user.role) === normalizeRole(role));
+  const getApproverOptions = (role: string, department: string) => {
+    // Strict matching: must match both role AND department, no fallback
+    if (!role.trim() || !department.trim()) {
+      return [];
+    }
 
-  const findMatchingUserForRole = (role: string) => {
-    const target = normalizeRole(role);
-    return availableUsers.find((user) => normalizeRole(user.role) === target) ?? null;
+    const targetRole = normalizeRole(role);
+    const targetDepartment = normalizeDepartment(department);
+
+    return availableUsers.filter((user) =>
+      normalizeRole(user.role) === targetRole &&
+      normalizeDepartment(user.department || '') === targetDepartment
+    );
+  };
+
+  const hasExactApproverForStep = (role: string, department: string) => {
+    if (!role.trim() || !department.trim()) return false;
+    return availableUsers.some((user) =>
+      normalizeRole(user.role) === normalizeRole(role) &&
+      normalizeDepartment(user.department || '') === normalizeDepartment(department)
+    );
   };
 
   const buildApprovalSteps = (type: FormType) => {
     return approvalChains[type].map((step, index) => {
-      const matchedUser = findMatchingUserForRole(step.role);
+      const matchedUser = findMatchingUserForStep(step.role, '');
       return {
         id: `step-${Date.now()}-${index}`,
         role: step.role,
+        department: '',
         userId: matchedUser?.id || '',
         userName: matchedUser?.name || '',
       };
@@ -329,14 +383,32 @@ export function NewForm() {
   };
 
   const updateApprovalStepRole = (index: number, role: string) => {
-    const matchedUser = findMatchingUserForRole(role);
+    const currentDepartment = approvalSteps[index]?.department || '';
+    // Clear user selection when role changes, as user must match both role AND department
+    const matchedUser = findMatchingUserForStep(role, currentDepartment);
     setApprovalSteps((prev) => prev.map((step, idx) => {
       if (idx !== index) return step;
       return {
         ...step,
         role,
-        userId: matchedUser?.id || step.userId,
-        userName: matchedUser?.name || step.userName,
+        // Clear user if no match for new role+department combination
+        userId: matchedUser?.id || '',
+        userName: matchedUser?.name || '',
+      };
+    }));
+  };
+
+  const updateApprovalStepDepartment = (index: number, department: string) => {
+    const currentRole = approvalSteps[index]?.role || '';
+    const matchedUser = findMatchingUserForStep(currentRole, department);
+    setApprovalSteps((prev) => prev.map((step, idx) => {
+      if (idx !== index) return step;
+      return {
+        ...step,
+        department,
+        // Clear user if no match for new role+department combination
+        userId: matchedUser?.id || '',
+        userName: matchedUser?.name || '',
       };
     }));
   };
@@ -358,7 +430,7 @@ export function NewForm() {
   const addApprovalStep = () => {
     setApprovalSteps((prev) => [
       ...prev,
-      { id: `step-${Date.now()}-${prev.length}`, role: '', userId: '', userName: '' },
+      { id: `step-${Date.now()}-${prev.length}`, role: '', department: '', userId: '', userName: '' },
     ]);
   };
 
@@ -384,7 +456,7 @@ export function NewForm() {
       if (step.userId || !step.role.trim()) {
         return step;
       }
-      const matchedUser = findMatchingUserForRole(step.role);
+      const matchedUser = findMatchingUserForStep(step.role, step.department);
       return matchedUser ? {
         ...step,
         userId: matchedUser.id,
@@ -523,23 +595,46 @@ export function NewForm() {
                               </div>
                               <div className="font-medium">Approval step</div>
                             </div>
-                            <Input
-                              value={step.role}
-                              onChange={(e) => updateApprovalStepRole(index, e.target.value)}
-                              placeholder="Role name (e.g. Department Head)"
-                            />
-                            <div className="text-gray-500 text-xs">Role lookup ignores capitalization.</div>
+                            <Select value={step.role} onValueChange={(value) => updateApprovalStepRole(index, value)}>
+                              <SelectTrigger className="h-11">
+                                <SelectValue placeholder="Select role" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {approvalRoleOptions.map((role) => (
+                                  <SelectItem key={role} value={role}>
+                                    {role}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Select value={step.department} onValueChange={(value) => updateApprovalStepDepartment(index, value)}>
+                              <SelectTrigger className="h-11">
+                                <SelectValue placeholder="Select department" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {approvalDepartmentOptions.map((department) => (
+                                  <SelectItem key={department} value={department}>
+                                    {department}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="text-gray-500 text-xs">Choose a role and department for each approval step.</div>
                           </div>
                           <div className="space-y-2">
                             <Label className="text-sm font-medium">Approver</Label>
-                            <Select value={step.userId} onValueChange={(value) => handleApproverChange(index, value)}>
+                            <Select
+                              value={step.userId}
+                              onValueChange={(value) => handleApproverChange(index, value)}
+                              disabled={!step.role.trim() || !step.department.trim()}
+                            >
                               <SelectTrigger className="h-11">
-                                <SelectValue placeholder="Select approver" />
+                                <SelectValue placeholder={step.role.trim() && step.department.trim() ? 'Select approver' : 'Choose role and department first'} />
                               </SelectTrigger>
                               <SelectContent>
-                                {getApproverOptions(step.role).map((user) => (
+                                {getApproverOptions(step.role, step.department).map((user) => (
                                   <SelectItem key={user.id} value={user.id}>
-                                    {user.name} {user.role ? `(${user.role})` : ''}
+                                    {user.name} {user.role ? `(${user.role})` : ''}{user.department ? ` - ${user.department}` : ''}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -554,9 +649,9 @@ export function NewForm() {
                           >
                             Remove
                           </Button>
-                          {!hasExactApproverForRole(step.role) && step.role.trim() && (
+                          {!hasExactApproverForStep(step.role, step.department) && step.role.trim() && step.department.trim() && (
                             <p className="text-xs text-orange-600 col-span-full">
-                              No matching approver role found for "{step.role}". Please select an available user manually.
+                              No matching approver found for "{step.role}" in {step.department}. Please select an available user manually.
                             </p>
                           )}
                         </div>
