@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Navigate } from 'react-router';
 import { useWorkflow, UserRole } from '../context/WorkflowContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -25,6 +25,8 @@ export function Admin() {
   const { currentUser } = useWorkflow();
   const [users, setUsers] = useState<Array<any>>([]);
   const [accountRequests, setAccountRequests] = useState<Array<any>>([]);
+  const [pendingSearch, setPendingSearch] = useState('');
+  const [accountSearch, setAccountSearch] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -162,6 +164,44 @@ export function Admin() {
     }
   };
 
+  const filteredAccountRequests = useMemo(() => {
+    const query = pendingSearch.trim().toLowerCase();
+    if (!query) return accountRequests;
+
+    return accountRequests.filter((request) => {
+      const name = (request.username || `${request.firstName || ''} ${request.lastName || ''}`).toLowerCase();
+      const email = (request.email || '').toLowerCase();
+      const department = (request.department || '').toLowerCase();
+      const role = (request.role || '').toLowerCase();
+
+      return (
+        name.includes(query) ||
+        email.includes(query) ||
+        department.includes(query) ||
+        role.includes(query)
+      );
+    });
+  }, [accountRequests, pendingSearch]);
+
+  const filteredUsers = useMemo(() => {
+    const query = accountSearch.trim().toLowerCase();
+    if (!query) return users;
+
+    return users.filter((user) => {
+      const name = (user.username || `${user.firstName || ''} ${user.lastName || ''}`).toLowerCase();
+      const email = (user.email || '').toLowerCase();
+      const department = (user.department || '').toLowerCase();
+      const role = (user.role || '').toLowerCase();
+
+      return (
+        name.includes(query) ||
+        email.includes(query) ||
+        department.includes(query) ||
+        role.includes(query)
+      );
+    });
+  }, [users, accountSearch]);
+
   if (!currentUser || currentUser.role !== 'Admin') {
     return <Navigate to="/" replace />;
   }
@@ -192,9 +232,18 @@ export function Admin() {
             <CardTitle>Pending Account Requests</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <input
+                type="search"
+                value={pendingSearch}
+                onChange={(e) => setPendingSearch(e.target.value)}
+                placeholder="Search pending requests by name, email, department, or role..."
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+              />
+            </div>
             {isLoading && accountRequests.length === 0 ? (
               <p>Loading account requests...</p>
-            ) : accountRequests.length === 0 ? (
+            ) : filteredAccountRequests.length === 0 ? (
               <p className="text-sm text-gray-600">No pending account requests.</p>
             ) : (
               <div className="overflow-x-auto mb-8">
@@ -209,7 +258,7 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {accountRequests.map((request) => (
+                    {filteredAccountRequests.map((request) => (
                       <tr key={request._id} className="hover:bg-yellow-50 bg-yellow-50/60">
                         <td className="p-3 border-b border-gray-200">{request.username || `${request.firstName} ${request.lastName}`}</td>
                         <td className="p-3 border-b border-gray-200">{request.email}</td>
@@ -245,6 +294,15 @@ export function Admin() {
             <CardTitle>Accounts</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4">
+              <input
+                type="search"
+                value={accountSearch}
+                onChange={(e) => setAccountSearch(e.target.value)}
+                placeholder="Search accounts by name, email, department, or role..."
+                className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm shadow-sm focus:border-blue-500 focus:outline-none"
+              />
+            </div>
             {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
             {isLoading && users.length === 0 ? (
               <p>Loading accounts...</p>
@@ -262,7 +320,7 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody>
-                    {users.map((user) => (
+                    {filteredUsers.map((user) => (
                       <tr key={user._id} className={`hover:bg-gray-50 ${!user.isApproved ? 'bg-yellow-50' : ''}`}>
                         <td className="p-3 border-b border-gray-200">{user.username || user.email}</td>
                         <td className="p-3 border-b border-gray-200">{user.email}</td>
