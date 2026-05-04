@@ -34,7 +34,7 @@ cloudinary.config({
 });
 
 // Log the configuration
-console.log(cloudinary.config());
+// console.log(cloudinary.config());
 
 // Get all users
 const getAllUsers = async (req, res) => {
