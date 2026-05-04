@@ -18,7 +18,7 @@ export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       sender: "ai",
-      text: "Hello! 👋 I'm your AI Assistant. I can help you with questions about digital signatures and forms. What would you like to know?",
+      text: "Hello! I'm your AI Chatbot. I can help you with questions about digital signatures and forms. What would you like to know?",
       timestamp: new Date(),
     },
   ]);
@@ -122,7 +122,7 @@ export default function AIAssistant() {
     setMessages([
       {
         sender: "ai",
-        text: "Hello! 👋 I'm your AI Assistant. I can help you with questions about digital signatures and forms. What would you like to know?",
+        text: "Hello! 👋 I'm your AI Chatbot. I can help you with questions about digital signatures and forms. What would you like to know?",
         timestamp: new Date(),
         type: "text",
       },
@@ -167,23 +167,48 @@ export default function AIAssistant() {
         onClick={() => setOpen(!open)}
         className="fixed bottom-6 right-6 rounded-full w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 text-white font-bold text-lg shadow-lg hover:shadow-xl hover:scale-110 transition-all duration-200 flex items-center justify-center z-40 border-4 border-white"
       >
-        {open ? <X className="w-6 h-6" /> : "🤖"}
+        {open ? <X className="w-6 h-6" /> : "💬"}
       </button>
 
       {/* Chat Box */}
       {open && (
         <Card className="fixed bottom-24 right-6 w-96 h-[600px] shadow-2xl z-50 flex flex-col border-2 border-blue-200 animate-in fade-in slide-in-from-bottom-4 duration-300">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg flex items-center justify-between">
-            <div>
-              <h3 className="font-bold text-lg">AI Assistant</h3>
-              <p className="text-sm text-blue-100">Always here to help</p>
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-t-lg flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              {/* Logo SVG */}
+              <div className="w-12 h-12 bg-white rounded-lg p-2 flex-shrink-0 flex items-center justify-center">
+                <svg viewBox="0 0 512 512" className="w-8 h-8" xmlns="http://www.w3.org/2000/svg">
+                  {/* Monitor */}
+                  <rect x="60" y="80" width="280" height="200" rx="16" fill="#0088CC" stroke="#1a1a1a" strokeWidth="14" />
+                  {/* Circle head */}
+                  <circle cx="150" cy="130" r="20" fill="white" stroke="#1a1a1a" strokeWidth="8" />
+                  {/* Body */}
+                  <ellipse cx="170" cy="190" rx="35" ry="45" fill="#FFA500" stroke="#1a1a1a" strokeWidth="8" />
+                  {/* Monitor stand */}
+                  <rect x="140" y="300" width="120" height="12" fill="#1a1a1a" rx="6" />
+                  <ellipse cx="170" cy="335" rx="50" ry="18" fill="#1a1a1a" />
+                  {/* Chat bubble */}
+                  <rect x="280" y="60" width="140" height="85" rx="14" fill="#CCFF00" stroke="#1a1a1a" strokeWidth="10" />
+                  {/* Bubble pointer */}
+                  <polygon points="280,135 265,155 295,155" fill="#CCFF00" stroke="#1a1a1a" strokeWidth="8" />
+                  {/* Chat lines */}
+                  <rect x="300" y="80" width="50" height="6" rx="3" fill="#1a1a1a" />
+                  <rect x="300" y="98" width="50" height="6" rx="3" fill="#1a1a1a" />
+                  <rect x="300" y="116" width="35" height="6" rx="3" fill="#1a1a1a" />
+                </svg>
+              </div>
+              
+              <div>
+                <h3 className="font-bold text-lg leading-tight">AI Chatbot</h3>
+                <p className="text-sm text-blue-100">Always here to help</p>
+              </div>
             </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={handleNewChat}
-              className="text-white hover:bg-blue-500"
+              className="text-white hover:bg-blue-500 flex-shrink-0"
               title="Start new chat"
             >
               <Plus className="w-4 h-4" />
