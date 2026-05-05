@@ -237,7 +237,8 @@ const loginUser = async (req, res) => {
 
         res.cookie('auth_token', token, {
             httpOnly: true,
-            sameSite: 'lax',
+            // Allow cross-site cookie in production (frontend on a different domain)
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
             secure: process.env.NODE_ENV === 'production',
             maxAge: 60 * 60 * 1000, // 1 hour
         });
