@@ -179,7 +179,11 @@ const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined
 /* ===================== PROVIDER ===================== */
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
-  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const defaultApiBaseUrl =
+    typeof window !== 'undefined'
+      ? window.location.origin
+      : 'http://localhost:4000';
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || defaultApiBaseUrl).replace(/\/+$/, '');
   const AUTH_TOKEN_KEY = 'signnu_auth_token';
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
