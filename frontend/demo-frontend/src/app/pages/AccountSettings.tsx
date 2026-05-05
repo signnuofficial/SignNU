@@ -6,7 +6,13 @@ export function AccountSettings() {
   const [newPassword, setNewPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const API_BASE_URL = "http://localhost:4000";
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const AUTH_TOKEN_KEY = 'signnu_auth_token';
+
+  const buildAuthHeaders = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +37,7 @@ export function AccountSettings() {
           credentials: 'include',
           headers: {
             "Content-Type": "application/json",
+            ...buildAuthHeaders(),
           },
           body: JSON.stringify({
             oldPassword,

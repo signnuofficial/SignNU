@@ -44,7 +44,13 @@ const approvalChains: Record<FormType, Array<{ role: string; userId: string; use
 export function NewForm() {
   const navigate = useNavigate();
   const { addForm, updateForm, deleteForm, generateFormPdf, currentUser } = useWorkflow();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const AUTH_TOKEN_KEY = 'signnu_auth_token';
+
+  const buildAuthHeaders = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   if (!currentUser) {
     return null;
@@ -85,6 +91,7 @@ export function NewForm() {
           credentials: 'include',
           headers: {
             'Content-Type': 'application/json',
+            ...buildAuthHeaders(),
           },
         });
         if (!response.ok) {

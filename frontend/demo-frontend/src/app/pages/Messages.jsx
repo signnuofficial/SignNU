@@ -2,7 +2,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 import { useWorkflow } from '../context/WorkflowContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+const AUTH_TOKEN_KEY = 'signnu_auth_token';
+
+const buildAuthHeaders = () => {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export function Messages() {
   const { currentUser } = useWorkflow();
@@ -133,6 +139,9 @@ export function Messages() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/users/approvers`, {
           credentials: 'include',
+          headers: {
+            ...buildAuthHeaders(),
+          },
         });
 
         if (!res.ok) {
@@ -158,6 +167,9 @@ export function Messages() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/messages/inbox`, {
         credentials: 'include',
+        headers: {
+          ...buildAuthHeaders(),
+        },
       });
 
       if (!res.ok) {
@@ -237,6 +249,9 @@ export function Messages() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/messages/${selectedUser._id}`, {
           credentials: 'include',
+          headers: {
+            ...buildAuthHeaders(),
+          },
         });
         if (!res.ok) {
           throw new Error('Unable to load conversation');
@@ -272,6 +287,7 @@ export function Messages() {
         method: 'POST',
         credentials: 'include',
         headers: {
+          ...buildAuthHeaders(),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ recipientId: selectedUser._id, text: messageText.trim() }),

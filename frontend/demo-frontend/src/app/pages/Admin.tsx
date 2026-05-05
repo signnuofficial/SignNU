@@ -31,7 +31,13 @@ export function Admin() {
   const [error, setError] = useState<string | null>(null);
   
   const viteEnv = import.meta as unknown as { env?: { VITE_API_BASE_URL?: string } };
-  const API_BASE_URL = viteEnv.env?.VITE_API_BASE_URL || 'http://localhost:4000';
+  const API_BASE_URL = (viteEnv.env?.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const AUTH_TOKEN_KEY = 'signnu_auth_token';
+
+  const buildAuthHeaders = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   // Memoized fetch function so it can be called on mount and on refresh
   const fetchData = useCallback(async () => {
@@ -41,11 +47,11 @@ export function Admin() {
       const [usersRes, requestsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/users`, {
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
         }),
         fetch(`${API_BASE_URL}/api/admin/account-requests?status=pending`, {
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
         }),
       ]);
 
@@ -73,7 +79,7 @@ export function Admin() {
       const response = await fetch(`${API_BASE_URL}/api/users/${userId}/role`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
         body: JSON.stringify({ role }),
       });
       if (!response.ok) throw new Error('Failed to update role');
@@ -89,7 +95,7 @@ export function Admin() {
       const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
         method: 'PATCH',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
         body: JSON.stringify({ department }),
       });
       if (!response.ok) throw new Error('Failed to update department');
@@ -105,7 +111,7 @@ export function Admin() {
       const response = await fetch(`${API_BASE_URL}/api/admin/account-requests/${requestId}/approve`, {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
       });
       if (!response.ok) throw new Error('Failed to approve account request');
       const data = await response.json();
@@ -123,7 +129,7 @@ export function Admin() {
       const response = await fetch(`${API_BASE_URL}/api/admin/account-requests/${requestId}/reject`, {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
         body: JSON.stringify({ note: 'Rejected by admin' }),
       });
       if (!response.ok) throw new Error('Failed to reject account request');
@@ -138,7 +144,7 @@ export function Admin() {
       const response = await fetch(`${API_BASE_URL}/api/admin/${userId}/approve`, {
         method: 'PUT',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
       });
       if (!response.ok) throw new Error('Failed to approve user');
       setUsers((prev) => prev.map((user) => user._id === userId ? { ...user, isApproved: true } : user));
@@ -155,7 +161,7 @@ export function Admin() {
       const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
         method: 'DELETE',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
       });
       if (!response.ok) throw new Error('Failed to delete user');
       setUsers((prev) => prev.filter((user) => user._id !== userId));

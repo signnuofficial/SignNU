@@ -179,16 +179,25 @@ const WorkflowContext = createContext<WorkflowContextType | undefined>(undefined
 /* ===================== PROVIDER ===================== */
 
 export function WorkflowProvider({ children }: { children: ReactNode }) {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const AUTH_TOKEN_KEY = 'signnu_auth_token';
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
+    const headers = new Headers(options.headers || undefined);
+    const hasFormDataBody = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (!hasFormDataBody && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+    if (token && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
     return fetch(url, {
       ...options,
       credentials: 'include',
-      headers: {
-        ...(options.headers || {}),
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
   };
 
@@ -262,10 +271,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<AuthResult> => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users/login`, {
+      const res = await authFetch(`${API_BASE_URL}/api/users/login`, {
         method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -286,6 +293,10 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
         signatureURL: data.user.signatureURL ?? data.user.signatureUrl,
       });
 
+      if (data.token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      }
+
       setIsAuthenticated(true);
       return { success: true };
     } catch {
@@ -303,6 +314,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     } catch {
       // ignore logout errors
     }
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
@@ -320,11 +332,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/forms`, {
+      const res = await authFetch(`${API_BASE_URL}/api/forms`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(newForm),
       });
 
@@ -347,11 +356,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const updateForm = async (id: string, updates: any) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/forms/${id}`, {
+      const res = await authFetch(`${API_BASE_URL}/api/forms/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(updates),
       });
 
@@ -371,7 +377,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
   const deleteForm = async (id: string) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/forms/${id}`, {
+      const res = await authFetch(`${API_BASE_URL}/api/forms/${id}`, {
         method: 'DELETE',
       });
       if (!res.ok) {
@@ -389,7 +395,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const fetchForms = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/forms`);
+        const res = await authFetch(`${API_BASE_URL}/api/forms`);
         if (!res.ok) throw new Error('Failed to load forms');
 
         const data = await res.json();
@@ -545,9 +551,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
     const formData = new FormData();
     formData.append('pdfFile', file);
 
-    const res = await fetch(`${API_BASE_URL}/api/users/${currentUser.id}/pdf`, {
+    const res = await authFetch(`${API_BASE_URL}/api/users/${currentUser.id}/pdf`, {
       method: 'PATCH',
-      credentials: 'include',
       body: formData,
     });
 
@@ -593,9 +598,8 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
       formData.append('attachmentId', attachmentId);
     }
 
-    const res = await fetch(`${API_BASE_URL}/api/forms/${formId}/pdf`, {
+    const res = await authFetch(`${API_BASE_URL}/api/forms/${formId}/pdf`, {
       method: 'POST',
-      credentials: 'include',
       body: formData,
     });
 
@@ -839,6 +843,7 @@ export function WorkflowProvider({ children }: { children: ReactNode }) {
 
       // If server issued token (auto-approved user), persist session state in client.
       if (responseData.token) {
+        localStorage.setItem(AUTH_TOKEN_KEY, responseData.token);
         setCurrentUser({
           id: responseData.user._id ?? responseData.user.id,
           name: responseData.user.username ?? responseData.user.email,

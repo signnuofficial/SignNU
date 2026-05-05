@@ -276,7 +276,13 @@ export function FormDetails() {
     }
   };
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+  const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const AUTH_TOKEN_KEY = 'signnu_auth_token';
+
+  const buildAuthHeaders = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   const openChainEditor = () => {
     setChainSteps(form.approvalSteps.map((step) => ({ ...step })));
@@ -288,7 +294,7 @@ export function FormDetails() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/users`, {
           credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...buildAuthHeaders() },
         });
         if (!res.ok) {
           const text = await res.text();

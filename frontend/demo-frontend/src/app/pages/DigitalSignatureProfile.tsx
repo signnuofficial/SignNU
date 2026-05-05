@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { SignatureCanvas } from "react-signature-canvas";
 import { useWorkflow } from "../context/WorkflowContext";
 
+const AUTH_TOKEN_KEY = 'signnu_auth_token';
+const buildAuthHeaders = () => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // SignaturePad component allows users to draw their signature
 function SignaturePad({ onSignatureChange, onSignatureData }: { 
     onSignatureChange: (hasSignature: boolean) => void;
@@ -148,6 +154,9 @@ function SubmitForm({
             const response = await fetch(`${apiBaseURL}/api/users/${userID}/signature`, {
                 method: "PATCH",
                 credentials: 'include',
+                headers: {
+                    ...buildAuthHeaders(),
+                },
                 body: formData,
             });
 
@@ -185,7 +194,7 @@ function DigitalSignatureProfile() {
     const [signatureDataURL, setSignatureDataURL] = useState<string | null>(null);
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const { currentUser, setCurrentUserSignature } = useWorkflow();
-    const apiBaseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
+    const apiBaseURL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000').replace(/\/+$/, '');
 
     if (!currentUser) {
         return null;
@@ -202,6 +211,7 @@ function DigitalSignatureProfile() {
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...buildAuthHeaders(),
                 },
                 body: JSON.stringify({ signatureURL: '' }),
             });
