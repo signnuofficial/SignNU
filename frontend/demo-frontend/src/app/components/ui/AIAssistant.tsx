@@ -13,6 +13,7 @@ interface Message {
 }
 
 export default function AIAssistant() {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
   const [open, setOpen] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([
@@ -32,7 +33,7 @@ export default function AIAssistant() {
   useEffect(() => {
     const initializeConversation = async () => {
       try {
-        const res = await axios.post("http://localhost:4000/api/summary/new");
+        const res = await axios.post(`${API_BASE_URL}/api/summary/new`);
         setConversationId(res.data.conversationId);
       } catch (err) {
         console.error("Failed to initialize conversation:", err);
@@ -86,7 +87,7 @@ export default function AIAssistant() {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:4000/api/summary/chat", formData, {
+      const res = await axios.post(`${API_BASE_URL}/api/summary/chat`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -132,7 +133,7 @@ export default function AIAssistant() {
     
     // Create new conversation
     try {
-      const res = await axios.post("http://localhost:4000/api/summary/new");
+      const res = await axios.post(`${API_BASE_URL}/api/summary/new`);
       setConversationId(res.data.conversationId);
     } catch (err) {
       console.error("Failed to create new conversation:", err);
@@ -147,7 +148,7 @@ export default function AIAssistant() {
     if (conversationId) {
       try {
         await axios.post(
-          `http://localhost:4000/api/summary/${conversationId}/clear-pdf`
+          `${API_BASE_URL}/api/summary/${conversationId}/clear-pdf`
         );
         console.log("PDF removed from server");
       } catch (err) {

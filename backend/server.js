@@ -14,13 +14,18 @@ const adminRoutes = require('./routes/adminRoutes');
 const formRoutes = require('./routes/formRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const ALLOWED_ORIGINS = new Set(
+  [FRONTEND_URL, 'http://localhost:5173', 'https://sign-nu-alpha.vercel.app']
+    .filter(Boolean)
+    .flatMap((origin) => origin.split(',').map((value) => value.trim()))
+);
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 4000;
 const io = require('socket.io')(server, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: Array.from(ALLOWED_ORIGINS),
     credentials: true,
   },
 });
@@ -77,7 +82,13 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 // 2. ENABLE CORS (Place this before your routes!)
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: (origin, callback) => {
+    if (!origin || ALLOWED_ORIGINS.has(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   allowedHeaders: ['Content-Type', 'Authorization'],
 })); 
