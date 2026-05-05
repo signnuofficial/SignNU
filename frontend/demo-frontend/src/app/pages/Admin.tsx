@@ -30,13 +30,7 @@ export function Admin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const viteEnv = import.meta as unknown as { env?: { VITE_API_BASE_URL?: string }; MODE?: string };
-  const defaultApiBaseUrl =
-    viteEnv.env?.VITE_API_BASE_URL ||
-    (viteEnv.MODE === 'production'
-      ? (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:4000')
-      : 'http://localhost:4000');
-  const API_BASE_URL = defaultApiBaseUrl.replace(/\/+$/, '');
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '') || '';
   const AUTH_TOKEN_KEY = 'signnu_auth_token';
 
   const buildAuthHeaders = (): Record<string, string> => {
